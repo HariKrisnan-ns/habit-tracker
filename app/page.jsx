@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { habits, completions } from '@/lib/schema'
 import { eq } from 'drizzle-orm'
 import Navbar from '@/components/Navbar'
+import WeeklyChart from '@/components/WeeklyChart'
 import { calculateStreak, today, last7Days } from '@/lib/utils'
 
 export default async function DashboardPage() {
@@ -28,6 +29,13 @@ export default async function DashboardPage() {
     return { ...h, streak: calculateStreak(dates) }
   }).sort((a, b) => b.streak - a.streak)
 
+  // Build chart data for last 7 days
+  const chartData = last7.map(date => {
+    const dayCompletions = allCompletions.filter(c => c.date === date).length
+    const dayLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'short' })
+    return { day: dayLabel, count: dayCompletions }
+  })
+
   const greeting = (() => {
     const h = new Date().getHours()
     if (h < 12) return 'Good morning'
@@ -35,49 +43,59 @@ export default async function DashboardPage() {
     return 'Good evening'
   })()
 
+  const bestStreak = habitsWithStreaks.length > 0 ? habitsWithStreaks[0].streak : 0
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Navbar username={user.username} />
-      <main style={{ flex: 1, padding: '40px 36px', maxWidth: 860 }} className="ht-main">
+      <main style={{ flex: 1, padding: 'clamp(20px, 4vw, 40px) clamp(16px, 3vw, 36px)', maxWidth: 'var(--content-max)' }} className="ht-main">
 
-        {/* Header */}
-        <div style={{ marginBottom: 36 }}>
-          <h1 style={{ fontSize: 30, fontWeight: 900 }}>
+        {/* ═══ Hero Greeting ═══ */}
+        <div className="animate-fadeIn" style={{ marginBottom: 'clamp(24px, 4vw, 36px)' }}>
+          <h1 className="page-title" style={{ fontSize: 'clamp(24px, 4vw, 32px)' }}>
             {greeting},{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #6366f1, #a78bfa)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>{user.username}</span> 👋
+            <span className="gradient-text">{user.username}</span> 👋
           </h1>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>
+          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8, fontWeight: 500 }}>
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
 
-        {/* Stats */}
+        {/* ═══ Stat Cards ═══ */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 28 }} className="ht-stats">
           {[
-            { label: "Today", value: `${todayDone}/${total}`, icon: '✅', color: '#22c55e' },
-            { label: "Weekly Rate", value: `${weekPct}%`, icon: '📊', color: '#6366f1' },
-            { label: "Habits", value: total, icon: '🎯', color: '#f59e0b' },
-            { label: "All Time", value: allCompletions.length, icon: '🏆', color: '#ec4899' },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: 'var(--bg2)', borderRadius: 16,
-              border: '1px solid var(--border)', padding: '20px',
+            { label: 'Today', value: `${todayDone}/${total}`, icon: '✅', color: '#22c55e', glowColor: 'rgba(34,197,94,0.15)' },
+            { label: 'Weekly Rate', value: `${weekPct}%`, icon: '📊', color: '#6366f1', glowColor: 'rgba(99,102,241,0.15)' },
+            { label: 'Habits', value: total, icon: '🎯', color: '#f59e0b', glowColor: 'rgba(245,158,11,0.15)' },
+            { label: 'Best Streak', value: `🔥 ${bestStreak}`, icon: '🏆', color: '#ec4899', glowColor: 'rgba(236,72,153,0.15)' },
+          ].map((s, i) => (
+            <div key={s.label} className={`glass-card animate-fadeIn delay-${i}`} style={{
+              padding: '22px 20px',
+              position: 'relative', overflow: 'hidden',
             }}>
-              <div style={{ fontSize: 26, marginBottom: 8 }}>{s.icon}</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, fontWeight: 600 }}>{s.label}</div>
+              {/* Icon glow */}
+              <div style={{
+                position: 'absolute', top: -10, right: -10,
+                width: 60, height: 60, borderRadius: '50%',
+                background: s.glowColor, filter: 'blur(20px)',
+              }} />
+              <div style={{ fontSize: 28, marginBottom: 10, position: 'relative' }}>{s.icon}</div>
+              <div style={{
+                fontSize: 26, fontWeight: 900, color: s.color,
+                position: 'relative', letterSpacing: '-0.5px',
+              }}>{s.value}</div>
+              <div style={{
+                fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 600,
+                textTransform: 'uppercase', letterSpacing: '0.05em', position: 'relative',
+              }}>{s.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Progress ring + message */}
-        <div style={{
-          background: 'var(--bg2)', borderRadius: 20, border: '1px solid var(--border)',
-          padding: '28px 32px', marginBottom: 20,
-          display: 'flex', alignItems: 'center', gap: 32,
+        {/* ═══ Progress Ring + Message ═══ */}
+        <div className="glass-card animate-fadeIn delay-3 progress-section" style={{
+          padding: 'clamp(20px, 3vw, 28px) clamp(20px, 3vw, 32px)', marginBottom: 20,
+          cursor: 'default',
         }}>
           <Ring done={todayDone} total={total} />
           <div>
@@ -89,43 +107,60 @@ export default async function DashboardPage() {
               {todayDone > 0 && todayDone === total && '🎉 Perfect day! All habits completed!'}
             </div>
             {total === 0 && (
-              <a href="/habits" style={{
-                display: 'inline-block', marginTop: 14, padding: '9px 20px',
-                background: 'var(--accent)', color: '#fff', borderRadius: 9,
-                textDecoration: 'none', fontSize: 13, fontWeight: 800,
+              <a href="/habits" className="btn-primary" style={{
+                display: 'inline-block', marginTop: 14, padding: '10px 22px',
+                fontSize: 13, borderRadius: 10, textDecoration: 'none',
               }}>➕ Add First Habit</a>
             )}
           </div>
         </div>
 
-        {/* Streaks */}
+        {/* ═══ Weekly Chart ═══ */}
+        {total > 0 && <div style={{ marginBottom: 20 }}><WeeklyChart data={chartData} /></div>}
+
+        {/* ═══ Streaks ═══ */}
         {habitsWithStreaks.length > 0 && (
-          <div style={{
-            background: 'var(--bg2)', borderRadius: 20,
-            border: '1px solid var(--border)', padding: '28px',
+          <div className="glass-card animate-fadeIn delay-5" style={{
+            padding: '28px', cursor: 'default',
           }}>
-            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 18 }}>🔥 Streaks</div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20,
+            }}>
+              <span style={{ fontSize: 20 }}>🔥</span>
+              <h3 style={{ fontSize: 17, fontWeight: 800 }}>Streaks</h3>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {habitsWithStreaks.map(h => (
-                <div key={h.id} style={{
+              {habitsWithStreaks.map((h, i) => (
+                <div key={h.id} className={`animate-fadeIn delay-${Math.min(i, 7)}`} style={{
                   display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '13px 16px', background: 'var(--bg3)',
-                  borderRadius: 12, border: '1px solid var(--border)',
+                  padding: '14px 16px',
+                  background: h.streak > 0
+                    ? 'linear-gradient(135deg, rgba(245,158,11,0.06), rgba(239,68,68,0.04))'
+                    : 'var(--bg3)',
+                  borderRadius: 14,
+                  border: `1px solid ${h.streak > 0 ? 'rgba(245,158,11,0.12)' : 'var(--glass-border)'}`,
+                  transition: 'all 0.2s ease',
                 }}>
                   <div style={{
-                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                    background: h.color + '22', border: `2px solid ${h.color}44`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19,
+                    width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+                    background: h.color + '18',
+                    border: `1.5px solid ${h.color}30`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
                   }}>{h.icon}</div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{h.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>{h.category}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{h.category}</div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 17, fontWeight: 900, color: h.streak > 0 ? '#f59e0b' : 'var(--muted)' }}>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{
+                      fontSize: 18, fontWeight: 900,
+                      color: h.streak > 0 ? '#f59e0b' : 'var(--muted)',
+                    }}>
                       {h.streak > 0 ? `🔥 ${h.streak}` : '—'}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{h.streak > 0 ? 'day streak' : 'no streak'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      {h.streak > 0 ? 'day streak' : 'no streak'}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -133,35 +168,45 @@ export default async function DashboardPage() {
           </div>
         )}
       </main>
-
-      <style>{`
-        .ht-main { margin-left: 220px !important; }
-        .ht-stats { grid-template-columns: repeat(4,1fr) !important; }
-        @media (max-width: 768px) {
-          .ht-main { margin-left: 0 !important; padding: 24px 16px 90px !important; }
-          .ht-stats { grid-template-columns: repeat(2,1fr) !important; }
-        }
-      `}</style>
     </div>
   )
 }
 
 function Ring({ done, total }) {
   const pct = total > 0 ? done / total : 0
-  const r = 42, circ = 2 * Math.PI * r
+  const r = 44, circ = 2 * Math.PI * r
+  const pctDisplay = total > 0 ? Math.round(pct * 100) : 0
   return (
-    <div style={{ position: 'relative', width: 110, height: 110, flexShrink: 0 }}>
-      <svg width="110" height="110" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--bg3)" strokeWidth="9" />
-        <circle cx="55" cy="55" r={r} fill="none" stroke="#6366f1" strokeWidth="9"
-          strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round" />
+    <div style={{ position: 'relative', width: 116, height: 116, flexShrink: 0 }}>
+      {/* Glow behind ring */}
+      <div style={{
+        position: 'absolute', inset: -8,
+        background: pct > 0 ? 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)' : 'none',
+        borderRadius: '50%',
+      }} />
+      <svg width="116" height="116" style={{ transform: 'rotate(-90deg)', position: 'relative' }}>
+        {/* Track */}
+        <circle cx="58" cy="58" r={r} fill="none" stroke="var(--bg3)" strokeWidth="8" />
+        {/* Progress */}
+        <circle cx="58" cy="58" r={r} fill="none"
+          stroke="url(#ringGrad)" strokeWidth="8"
+          strokeDasharray={`${circ * pct} ${circ}`}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}
+        />
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="#a78bfa" />
+          </linearGradient>
+        </defs>
       </svg>
       <div style={{
         position: 'absolute', inset: 0, display: 'flex',
         flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       }}>
-        <div style={{ fontSize: 20, fontWeight: 900 }}>{done}</div>
-        <div style={{ fontSize: 11, color: 'var(--muted)' }}>of {total}</div>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>{pctDisplay}%</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 500 }}>{done}/{total}</div>
       </div>
     </div>
   )
