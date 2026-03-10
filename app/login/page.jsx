@@ -96,7 +96,7 @@ export default function LoginPage() {
           <div style={{ fontSize: 56, marginBottom: 16 }}>🔥</div>
           <h2 className="gradient-text" style={{
             fontSize: 36, fontWeight: 900, letterSpacing: '-1px',
-          }}>HabitFlow</h2>
+          }}>Tracker</h2>
           <p style={{ color: 'var(--muted)', fontSize: 15, marginTop: 10 }}>
             Build better habits, one day at a time
           </p>

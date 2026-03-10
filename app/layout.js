@@ -1,8 +1,14 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'HabitFlow',
+  title: 'Tracker',
   description: 'Track your daily habits and build streaks',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Tracker',
+  },
 }
 
 export default function RootLayout({ children }) {

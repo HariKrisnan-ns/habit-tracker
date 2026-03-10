@@ -64,7 +64,7 @@ export default function Navbar({ username }) {
             fontSize: 20, fontWeight: 900, letterSpacing: '-0.5px',
             marginBottom: 4,
           }}>
-            <span className="gradient-text">HabitFlow</span>
+            <span className="gradient-text">Tracker</span>
           </div>
           <div style={{
             fontSize: 12, color: 'var(--muted)',
