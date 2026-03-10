@@ -1,7 +1,7 @@
 {
-    "name": "HabitFlow",
-    "short_name": "HabitFlow",
-    "description": "Track your daily habits",
+    "name": "Tracker",
+    "short_name": "Tracker",
+    "description": "Track your daily habits and build streaks",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a0a0f",
